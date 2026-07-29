@@ -1,0 +1,9 @@
+# 忽略 APK 文件
+*.apk
+
+# 忽略日志
+*.log
+
+# 忽略系统文件
+.DS_Store
+Thumbs.db

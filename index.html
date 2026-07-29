@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termux v0.118.3 下载 &amp; 环境配置指南</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            max-width: 640px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card:first-child { text-align: center; }
+        h1 { color: #333; font-size: 24px; margin-bottom: 10px; }
+        h2 {
+            color: #333; font-size: 18px; margin: 0 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e8e8e8;
+        }
+        .version { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .info {
+            background: #f0f7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            font-size: 13px;
+            color: #555;
+        }
+        .info strong { color: #333; }
+        .info code, .steps code {
+            background: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            transition: background 0.3s;
+        }
+        .download-btn:hover { background: #45a049; }
+        .checksum {
+            font-family: monospace;
+            font-size: 11px;
+            color: #999;
+            word-break: break-all;
+            margin-top: 15px;
+        }
+        .steps {
+            text-align: left;
+            background: #fff8e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 13px;
+            color: #555;
+        }
+        .steps li { margin: 8px 0; }
+        .steps li code, .steps p code {
+            background: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .cmd-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .cmd-block .comment { color: #6a9955; }
+        .cmd-block .prompt { color: #569cd6; }
+        .badge {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+        .badge-green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .badge-orange {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 30px;
+        }
+        .separator {
+            border: none;
+            border-top: 1px solid #e8e8e8;
+            margin: 25px 0;
+        }
+
+        /* ===== 悬浮报错按钮 ===== */
+        .report-fab {
+            position: fixed;
+            bottom: 28px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #e53935;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 16px rgba(229,57,53,0.4);
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .report-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(229,57,53,0.6);
+        }
+        .report-fab:active {
+            transform: scale(0.95);
+        }
+        .report-fab-label {
+            position: fixed;
+            bottom: 40px;
+            right: 84px;
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .report-fab:hover + .report-fab-label {
+            opacity: 1;
+        }
+
+        /* ===== 模态框 ===== */
+        .report-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .report-modal-overlay.active {
+            display: flex;
+        }
+        .report-modal {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 520px;
+            max-height: 80vh;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.25s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        .report-modal-header {
+            padding: 18px 22px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .report-modal-header h3 {
+            margin: 0;
+            font-size: 17px;
+            color: #333;
+        }
+        .report-modal-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #999;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .report-modal-close:hover {
+            color: #333;
+        }
+        .report-modal-body {
+            padding: 16px 22px 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        .report-modal-body textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .report-modal-body textarea:focus {
+            border-color: #e53935;
+            box-shadow: 0 0 0 3px rgba(229,57,53,0.1);
+        }
+        .report-modal-body .hint {
+            font-size: 12px;
+            color: #999;
+            margin: 8px 0 12px;
+        }
+        .report-modal-footer {
+            padding: 12px 22px 18px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn-submit {
+            background: #e53935;
+            color: white;
+            border: none;
+            padding: 10px 28px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: #c62828;
+        }
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-cancel {
+            background: #f5f5f5;
+            color: #666;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-cancel:hover {
+            background: #e8e8e8;
+        }
+
+        /* ===== Toast 提示 ===== */
+        .toast {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            z-index: 3000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: toastIn 0.3s ease;
+            display: none;
+        }
+        .toast.success { background: #43a047; }
+        .toast.error   { background: #e53935; }
+        .toast.show {
+            display: block;
+        }
+        @keyframes toastIn {
+            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        /* 页面底部留出按钮空间 */
+        body {
+            padding-bottom: 80px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== 下载区域 ==================== -->
+    <div class="card">
+        <h1>📦 Termux</h1>
+        <div class="version">版本 v0.118.3 · arm64-v8a · F-Droid 官方构建</div>
+        <div class="file-size" style="color:#888;font-size:14px;">文件大小: 109MB</div>
+
+        <a class="download-btn" href="termux-app_v0.118.3.apk" download>
+            ⬇️ 下载 APK
+        </a>
+
+        <div class="info">
+            <strong>📋 文件信息</strong><br>
+            文件名: termux-app_v0.118.3.apk<br>
+            架构: arm64-v8a (aarch64)<br>
+            SHA256: <span class="checksum">e6265a57eb5ca363808488e3b01955958bed93bc0c8a0d281849b363b11027ec</span>
+        </div>
+
+        <div class="steps">
+            <strong>📖 基础安装步骤</strong>
+            <ol>
+                <li>点击上方按钮下载 APK</li>
+                <li>在通知栏或下载目录找到 APK 文件</li>
+                <li>点击安装（需开启「允许安装未知来源应用」）</li>
+                <li>安装完成后打开 Termux</li>
+                <li>初始化存储权限: <code>termux-setup-storage</code></li>
+                <li>换源加速: <code>pkg update</code></li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- ==================== SSH ==================== -->
+    <div class="card">
+        <h2>🔐 安装 SSH 服务</h2>
+        <div class="steps">
+            <strong>安装 &amp; 启动</strong>
+            <ol>
+                <li><code>pkg install openssh</code> — 安装 OpenSSH</li>
+                <li><code>passwd</code> — 设置登录密码</li>
+                <li><code>sshd</code> — 启动 SSH 服务（默认端口 <strong>8022</strong>）</li>
+            </ol>
+
+            <strong>🔍 查看用户名（重要）</strong>
+            <p style="margin:8px 0;">在目标设备的 Termux 中执行以下命令获取用户名：</p>
+            <div class="cmd-block"><span class="prompt">$</span> whoami
+<span class="comment"># 输出示例: u0_a348</span></div>
+
+            <p style="margin-top:10px;"><strong>连接方式</strong>（从另一台设备 SSH 过来）:</p>
+            <div class="cmd-block"><span class="prompt">$</span> ssh <span style="color:#ff6b6b;">用户名</span>@<span style="color:#4fc3f7;">设备IP</span> -p 8022
+<span class="comment"># 示例: ssh u0_a348@192.168.43.36 -p 8022</span></div>
+        </div>
+    </div>
+
+    <!-- ==================== Node.js + npm ==================== -->
+    <div class="card">
+        <h2>⚡ 安装 Node.js &amp; npm</h2>
+        <p style="font-size:13px;color:#666;margin-top:-10px;">在 Termux 中直接用包管理器安装，一步到位，自带 npm。</p>
+
+        <div class="steps">
+            <strong>安装步骤</strong>
+            <ol>
+                <li>直接安装:
+                    <div class="cmd-block"><span class="prompt">$</span> pkg install nodejs-lts -y</div>
+                </li>
+                <li>验证:
+                    <div class="cmd-block"><span class="prompt">$</span> node -v   <span class="comment"># 目标设备: v24.18.0</span>
+<span class="prompt">$</span> npm -v    <span class="comment"># 目标设备: 11.18.0</span></div>
+                </li>
+            </ol>
+            <p style="margin-top:10px;font-size:12px;color:#999;">💡 如果遇到网络问题，先执行 <code>pkg update</code> 更新源后再安装</p>
+        </div>
+
+        <div class="info">
+            <strong>📋 已安装验证</strong><br>
+            此方案已在目标设备 <strong>192.168.43.36</strong> 上实测通过 ✅<br>
+            · node: v24.18.0<br>
+            · npm: 11.18.0<br>
+            · 网络问题处理：如果 GitHub 直连不稳定，可通过本机代理 <code>http://192.168.43.1:7892</code> 加速（需先启动 Clash）
+        </div>
+    </div>
+
+    <!-- ==================== Python3 ==================== -->
+    <div class="card">
+        <h2>🐍 安装 Python3</h2>
+        <p style="font-size:13px;color:#666;margin-top:-10px;">SkillHub 技能商店依赖 Python3，安装后即可使用 <code>skillhub</code> 搜索安装各种技能。</p>
+
+        <div class="steps">
+            <strong>安装步骤</strong>
+            <ol>
+                <li>直接安装:
+                    <div class="cmd-block"><span class="prompt">$</span> pkg install python -y</div>
+                </li>
+                <li>验证:
+                    <div class="cmd-block"><span class="prompt">$</span> python3 --version   <span class="comment"># 目标设备: 3.13.x</span></div>
+                </li>
+            </ol>
+        </div>
+
+        <div class="steps" style="background:#f0f7ff;">
+            <strong>安装 SkillHub（技能商店）</strong>
+            <ol>
+                <li>一键安装:
+                    <div class="cmd-block"><span class="prompt">$</span> curl -fsSL https://skillhub-1388575217.cos.ap-guangzhou.myqcloud.com/install/install.sh | bash</div>
+                </li>
+                <li>添加到 PATH 并验证:
+                    <div class="cmd-block"><span class="prompt">$</span> export PATH="\$HOME/.local/bin:\$PATH"<br><span class="prompt">$</span> skillhub --version</div>
+                </li>
+                <li>搜索技能:
+                    <div class="cmd-block"><span class="prompt">$</span> skillhub search github</div>
+                </li>
+                <li>安装技能到本机 skills 目录:
+                    <div class="cmd-block"><span class="prompt">$</span> skillhub install 技能名 --namespace 作者 --dir ~/.pi/agent/skills/</div>
+                </li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <strong>📖 说明</strong><br>
+            SkillHub 是国内优先的 Skill 商店，提供加速、合规的技能搜索与安装能力。<br>
+            本机 skills 目录: <code>~/.pi/agent/skills/</code><br>
+            项目地址: <a href="https://skillhub.cn" target="_blank">https://skillhub.cn</a>
+        </div>
+    </div>
+
+    <!-- ==================== pi-agent ==================== -->
+    <div class="card">
+        <h2>🤖 安装 pi-agent（AI 编码助手）</h2>
+        <p style="font-size:13px;color:#666;margin-top:-10px;">
+            <span class="badge badge-green">已安装</span>
+            npm 包: <code>@earendil-works/pi-coding-agent</code>
+        </p>
+
+        <div class="steps">
+            <strong>安装步骤</strong>
+            <ol>
+                <li>全局安装 pi-coding-agent:
+                    <div class="cmd-block"><span class="prompt">$</span> npm install -g @earendil-works/pi-coding-agent@latest</div>
+                </li>
+                <li>验证安装:
+                    <div class="cmd-block"><span class="prompt">$</span> pi --version   <span class="comment"># 本机: 0.82.1</span></div>
+                </li>
+                <li>初始化项目（在项目目录中执行）:
+                    <div class="cmd-block"><span class="prompt">$</span> pi init</div>
+                </li>
+                <li>启动对话:
+                    <div class="cmd-block"><span class="prompt">$</span> pi</div>
+                </li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <strong>📖 说明</strong><br>
+            pi-agent（pi-coding-agent）是一个终端 AI 编码助手，支持 <code>read</code>、<code>bash</code>、<code>edit</code>、<code>write</code> 等工具操作。<br>
+            GitHub: <a href="https://github.com/earendil-works/pi" target="_blank">https://github.com/earendil-works/pi</a>
+        </div>
+    </div>
+
+    <!-- ==================== pi-web ==================== -->
+    <div class="card">
+        <h2>🌐 安装 pi-web（Web 界面）</h2>
+        <p style="font-size:13px;color:#666;margin-top:-10px;">
+            <span class="badge badge-green">已安装</span>
+            npm 包: <code>@agegr/pi-web</code> · 端口: <strong>30141</strong>
+        </p>
+        <p style="font-size:13px;color:#666;">
+            pi-web 是 pi-agent 的 Web 图形界面，基于 Next.js 构建。
+        </p>
+
+        <div class="steps">
+            <strong>安装步骤</strong>
+            <ol>
+                <li>全局安装 pi-web:
+                    <div class="cmd-block"><span class="prompt">$</span> npm install -g @agegr/pi-web@latest</div>
+                </li>
+                <li>验证安装:
+                    <div class="cmd-block"><span class="prompt">$</span> pi-web --version   <span class="comment"># 本机: 0.8.2</span></div>
+                </li>
+                <li>启动服务（前台）:
+                    <div class="cmd-block"><span class="prompt">$</span> pi-web</div>
+                </li>
+                <li>后台启动（推荐，Termux 专用）:
+                    <div class="cmd-block"><span class="prompt">$</span> nohup pi-web &gt; ~/pi-web.log 2&gt;&amp;1 &amp;</div>
+                </li>
+                <li>访问: 浏览器打开 <code>http://localhost:30141</code></li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <strong>📋 本机参考信息</strong><br>
+            pi-web 已注册为系统服务，通过 service-manager 管理:<br>
+            <code>service-skill start pi-web</code> — 启动<br>
+            <code>service-skill stop pi-web</code> — 停止<br>
+            <code>service-skill log pi-web</code> — 查看日志<br>
+            <code>sss</code> — 查看所有服务状态
+        </div>
+    </div>
+
+    <!-- ==================== 服务管理 ==================== -->
+    <div class="card">
+        <h2>🛠️ 服务管理（service-manager）</h2>
+        <p style="font-size:13px;color:#666;margin-top:-10px;">管理 Termux 中的后台服务，如 pi-web、SSH、code-server 等。</p>
+
+        <div class="steps">
+            <strong>常用命令</strong>
+            <div class="cmd-block"><span class="prompt">$</span> service-skill status              <span class="comment"># 查看所有服务状态</span>
+<span class="prompt">$</span> service-skill start 服务名          <span class="comment"># 启动服务</span>
+<span class="prompt">$</span> service-skill stop 服务名           <span class="comment"># 停止服务</span>
+<span class="prompt">$</span> service-skill log 服务名 [行数]     <span class="comment"># 查看日志</span>
+<span class="prompt">$</span> service-skill ports                 <span class="comment"># 查看端口清单</span>
+<span class="prompt">$</span> service-skill add 名称 "命令" 端口   <span class="comment"># 添加新服务</span></div>
+        </div>
+
+        <div class="info">
+            <strong>📋 本机已注册服务</strong><br>
+            · <code>code-server</code> — 端口 8080（启用）<br>
+            · <code>pi-web</code> — 端口 30141（启用）<br>
+            · <code>sshd</code> — 端口 8022（禁用）<br>
+            · <code>clash</code> — 端口 7892（禁用）<br>
+            · <code>adb</code> — 端口 5037（禁用）
+        </div>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ==================== 完整安装流程 ==================== -->
+    <div class="card" style="background:#fafafa;border:1px solid #e0e0e0;">
+        <h2 style="text-align:center;border:none;">📜 一键安装全流程</h2>
+        <p style="font-size:13px;color:#666;text-align:center;margin-bottom:15px;">
+            在目标设备上按顺序执行以下命令即可完成所有安装
+        </p>
+        <div class="cmd-block" style="font-size:11px;"><span class="comment"># === 第一步：基础环境 ===</span>
+<span class="prompt">$</span> termux-setup-storage
+<span class="prompt">$</span> pkg update
+
+<span class="comment"># === 第二步：SSH 服务 ===</span>
+<span class="prompt">$</span> pkg install openssh -y
+<span class="prompt">$</span> passwd
+<span class="prompt">$</span> sshd
+
+<span class="comment"># === 第三步：Node.js + npm（直接安装，无需 nvm） ===</span>
+<span class="prompt">$</span> pkg install nodejs-lts -y
+<span class="prompt">$</span> node -v   <span class="comment"># 验证</span>
+<span class="prompt">$</span> npm -v    <span class="comment"># 验证</span>
+
+<span class="comment"># === 第四步：pi-agent ===</span>
+<span class="prompt">$</span> npm install -g @earendil-works/pi-coding-agent@latest
+
+<span class="comment"># === 第五步：pi-web ===</span>
+<span class="prompt">$</span> npm install -g @agegr/pi-web@latest
+
+<span class="comment"># === 第六步：启动 pi-web ===</span>
+<span class="prompt">$</span> nohup pi-web &gt; ~/pi-web.log 2&gt;&amp;1 &amp;
+
+<span class="comment"># === 验证 ===</span>
+<span class="prompt">$</span> node -v    <span class="comment"># → v24.x</span>
+<span class="prompt">$</span> npm -v     <span class="comment"># → 11.x</span>
+<span class="prompt">$</span> pi --version   <span class="comment"># → 0.82.1</span>
+<span class="prompt">$</span> curl -s http://localhost:30141 | head -5  <span class="comment"># → pi-web 首页</span></div>
+    </div>
+
+    <div class="footer">
+        本服务器运行在 192.168.43.1:8000 · Termux v0.118.3<br>
+        文件通过局域网 HTTP 共享
+    </div>
+
+    <!-- ===== Toast 提示 ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== 悬浮报错按钮 ===== -->
+    <button class="report-fab" id="reportFab" title="提交报错信息">❗</button>
+    <div class="report-fab-label">提交报错信息</div>
+
+    <!-- ===== 报错模态框 ===== -->
+    <div class="report-modal-overlay" id="reportOverlay">
+        <div class="report-modal">
+            <div class="report-modal-header">
+                <h3>📝 提交报错信息</h3>
+                <button class="report-modal-close" id="modalClose">✕</button>
+            </div>
+            <div class="report-modal-body">
+                <textarea id="errorTextarea" placeholder="请在此粘贴报错内容&#10;&#10;快捷键: Ctrl+V 粘贴，Ctrl+Enter 提交"></textarea>
+                <div class="hint">💡 提交后会在本机保存为文件，方便排查问题</div>
+            </div>
+            <div class="report-modal-footer">
+                <button class="btn-cancel" id="btnCancel">取消</button>
+                <button class="btn-submit" id="btnSubmit" disabled>提交报错</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        // DOM 元素
+        const fab       = document.getElementById('reportFab');
+        const overlay   = document.getElementById('reportOverlay');
+        const textarea  = document.getElementById('errorTextarea');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const btnCancel = document.getElementById('btnCancel');
+        const modalClose = document.getElementById('modalClose');
+        const toast     = document.getElementById('toast');
+
+        let toastTimer = null;
+
+        // ===== Toast 提示 =====
+        function showToast(msg, type) {
+            toast.className = 'toast ' + type + ' show';
+            toast.textContent = msg;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ===== 打开模态框 =====
+        function openModal() {
+            overlay.classList.add('active');
+            textarea.value = '';
+            btnSubmit.disabled = true;
+            // 等动画完成后聚焦
+            setTimeout(() => textarea.focus(), 300);
+        }
+
+        // ===== 关闭模态框 =====
+        function closeModal() {
+            overlay.classList.remove('active');
+        }
+
+        // ===== 提交报错 =====
+        async function submitError() {
+            const text = textarea.value.trim();
+            if (!text) {
+                showToast('请先粘贴报错内容', 'error');
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = '提交中…';
+
+            try {
+                const resp = await fetch('/api/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        source: location.hostname || 'unknown'
+                    })
+                });
+                const result = await resp.json();
+
+                if (result.ok) {
+                    showToast('✅ 报错已保存到本机', 'success');
+                    closeModal();
+                } else {
+                    showToast('❌ ' + (result.msg || '提交失败'), 'error');
+                }
+            } catch (err) {
+                showToast('❌ 网络错误: ' + err.message, 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = '提交报错';
+            }
+        }
+
+        // ===== 事件绑定 =====
+
+        // 悬浮按钮点击
+        fab.addEventListener('click', openModal);
+
+        // 关闭按钮
+        modalClose.addEventListener('click', closeModal);
+        btnCancel.addEventListener('click', closeModal);
+
+        // 点击遮罩层关闭
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeModal();
+        });
+
+        // 文本框内容变化时启用/禁用提交按钮
+        textarea.addEventListener('input', function() {
+            btnSubmit.disabled = this.value.trim().length === 0;
+        });
+
+        // 提交按钮
+        btnSubmit.addEventListener('click', submitError);
+
+        // Ctrl+Enter 快捷键提交
+        textarea.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                if (!btnSubmit.disabled) submitError();
+            }
+        });
+
+        // 键盘 ESC 关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                closeModal();
+            }
+        });
+    })();
+    </script>
+
+</body>
+</html>
